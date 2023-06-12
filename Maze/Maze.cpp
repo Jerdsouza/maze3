@@ -49,6 +49,9 @@ void Maze::handleerror(ErrorNum error)
 	case ErrorNum::NoLeftwall:
 		cout << "Did not find a wall for hallway maze" << endl;
 		break;
+	case ErrorNum::DeadEnd:
+		cout << "Reached a Dead end" << endl;
+		break;
 	case ErrorNum::NoTargetCell:
 		cout << "No Target cell found." << endl;
 		break;
@@ -174,13 +177,6 @@ Coordinates Maze::getfrontcell(void)
 	return coord;
 }
 
-
-void Maze::moveforward(void)
-{
-	Coordinates coord = getfrontcell();
-	_pixel.SetCoordinates(coord);
-}
-
 void Maze::rotateccw(void)
 {
 	switch (_pixel.GetDirection())
@@ -225,6 +221,12 @@ void Maze::rotatecw(void)
 	}
 }
 
+
+void Maze::moveforward(void)
+{
+	Coordinates coord = getfrontcell();
+	_pixel.SetCoordinates(coord);
+}
 
 
 // Loads the maze with the gridArray to be solved and the num of rows and cols.
@@ -287,9 +289,9 @@ ErrorNum Maze::GetErrorCode(void)
 	return _error;
 }
 
-list<Coordinates> Maze::Solve(void)
-{
-	
+list<Coordinates> Maze::findhallwaypath()
+{	
+	_error = ErrorNum::NoError;
 	Coordinates leftcell = getleftcell();
 	Coordinates frontcell = getfrontcell();
 
@@ -297,20 +299,46 @@ list<Coordinates> Maze::Solve(void)
 	{
 		if (iswallcell(leftcell) == false)
 		{
-			rotateccw();
-			moveforward();
-			_path.push_front(frontcell);
-			cout << _pixel.GetCoordinates().GetX() << ", " << _pixel.GetCoordinates().GetY() << endl;
+			handleerror(ErrorNum::NoLeftwall);
+			break;
 		}
 		else if (iscellempty(frontcell))
 		{
-			moveforward();
-			_path.push_front(frontcell);
-			cout << _pixel.GetCoordinates().GetX() << ", " << _pixel.GetCoordinates().GetY() << endl;
+			if (istargetcell(frontcell))
+			{
+				moveforward();
+				_path.push_front(frontcell);
+				cout << _pixel.GetCoordinates().GetX() << ", " << _pixel.GetCoordinates().GetY() << endl;
+				continue;
+			}
+			else if (testcellvalue(frontcell, _startID))
+			{
+				handleerror(ErrorNum::NoTargetCell);
+				break;
+			}
+			else
+			{
+				moveforward();
+				_path.push_front(frontcell);
+				cout << _pixel.GetCoordinates().GetX() << ", " << _pixel.GetCoordinates().GetY() << endl;
+			}
 		}
 		else
 		{
-			rotatecw();
+			if (iscellinboundary(frontcell) == false)
+			{
+				handleerror(ErrorNum::NoTargetCell);
+			}
+			else if (testcellvalue(frontcell, 1))
+			{
+				handleerror(ErrorNum::DeadEnd);
+			}
+			else
+			{
+				// should not reach here
+				assert(false);
+			}
+			break;
 		}
 
 		leftcell = getleftcell();
@@ -320,5 +348,55 @@ list<Coordinates> Maze::Solve(void)
 
 	return _path;
 	
+}
+
+list<Coordinates> Maze::SolveMaze()
+{
+
+	while (istargetcell(_pixel.GetCoordinates()) == false)
+	{
+		findhallwaypath();
+
+		switch (GetErrorCode())
+		{
+		case ErrorNum::DeadEnd:
+		{
+			rotatecw();
+			Coordinates frontcell = getfrontcell();
+			_error = ErrorNum::NoError;
+			if (testcellvalue(frontcell, 1))
+			{
+				handleerror(ErrorNum::DeadEnd);
+				break;
+			}
+		}
+		break;
+		case ErrorNum::NoLeftwall:
+		{
+			rotateccw();
+			moveforward();
+			_path.push_front(_pixel.GetCoordinates());
+			cout << _pixel.GetCoordinates().GetX() << ", " << _pixel.GetCoordinates().GetY() << endl;
+			_error = ErrorNum::NoError;
+		}
+		break;
+		case ErrorNum::NoTargetCell:
+		{
+			return _path;
+		}
+		break;
+		case ErrorNum::NoError:
+		{
+			// do nothing
+		}
+		break;
+		default:
+			assert(false);
+		break;
+		}
+	}
+
+	return _path;
+
 }
 

@@ -9,7 +9,7 @@
 
 using namespace std;
 
-enum class ErrorNum { NoError=0, MazeGrid, NoStartCell, NumOfRowsIsZero, NumOfColsIsZero, NoLeftwall, NoTargetCell, PathNotFound };
+enum class ErrorNum { NoError=0, MazeGrid, NoStartCell, NumOfRowsIsZero, NumOfColsIsZero, NoLeftwall, NoTargetCell, DeadEnd, PathNotFound };
 
 // Class representing the Maze
 // The Maze will be responsible for solving the puzzle, by moving
@@ -53,13 +53,15 @@ private:
 	
 	Coordinates getfrontcell(void);
 
+	void moveforward(void);
+
 	void rotateccw(void);
 
 	void rotatecw(void);
 
-	void moveforward(void);
-
 	bool testcellvalue(Coordinates coord, int testval);
+
+	list<Coordinates> findhallwaypath();
 	
 public:
 
@@ -73,8 +75,9 @@ public:
 
 	list<Coordinates> GetPath();
 
+	list<Coordinates> SolveMaze();
+
 	ErrorNum GetErrorCode(void);
-	list<Coordinates> Solve(void);
 };
 
 #endif
