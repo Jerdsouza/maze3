@@ -49,8 +49,11 @@ void Maze::handleerror(ErrorNum error)
 	case ErrorNum::NoLeftwall:
 		cout << "Did not find a wall for hallway maze" << endl;
 		break;
-	case ErrorNum::DeadEnd:
-		cout << "Reached a Dead end" << endl;
+	case ErrorNum::CW_CCWTurnsDone:
+		cout << "Both CW and CCW turns done, no target was found" << endl;
+		break;
+	case ErrorNum::ReachedWall:
+		cout << "Reached a Wall" << endl;
 		break;
 	case ErrorNum::NoTargetCell:
 		cout << "No Target cell found." << endl;
@@ -311,7 +314,8 @@ list<Coordinates> Maze::findhallwaypath()
 				cout << _pixel.GetCoordinates().GetX() << ", " << _pixel.GetCoordinates().GetY() << endl;
 				continue;
 			}
-			else if (testcellvalue(frontcell, _startID))
+			//else if (testcellvalue(frontcell, _startID) || iswallcell(frontcell))
+			else if(iswallcell(frontcell))
 			{
 				handleerror(ErrorNum::NoTargetCell);
 				break;
@@ -327,11 +331,11 @@ list<Coordinates> Maze::findhallwaypath()
 		{
 			if (iscellinboundary(frontcell) == false)
 			{
-				handleerror(ErrorNum::NoTargetCell);
+				handleerror(ErrorNum::ReachedWall);
 			}
 			else if (testcellvalue(frontcell, 1))
 			{
-				handleerror(ErrorNum::DeadEnd);
+				handleerror(ErrorNum::ReachedWall);
 			}
 			else
 			{
@@ -352,32 +356,46 @@ list<Coordinates> Maze::findhallwaypath()
 
 list<Coordinates> Maze::SolveMaze()
 {
-
+	bool cwflag = false;
+	bool ccwflag = false;
 	while (istargetcell(_pixel.GetCoordinates()) == false)
 	{
 		findhallwaypath();
 
 		switch (GetErrorCode())
 		{
-		case ErrorNum::DeadEnd:
+		case ErrorNum::ReachedWall:
 		{
-			rotatecw();
-			Coordinates frontcell = getfrontcell();
-			_error = ErrorNum::NoError;
-			if (testcellvalue(frontcell, 1))
+			if (ccwflag && (cwflag == false))
 			{
-				handleerror(ErrorNum::DeadEnd);
-				break;
+				rotatecw();
+				cwflag = true;
+				Coordinates frontcell = getfrontcell();
+				_error = ErrorNum::NoError;
+				if (testcellvalue(frontcell, 1))
+				{
+					handleerror(ErrorNum::ReachedWall);
+					break;
+				}
+			}
+			else
+			{
+				handleerror(ErrorNum::CW_CCWTurnsDone);
+				return _path;
 			}
 		}
 		break;
 		case ErrorNum::NoLeftwall:
 		{
-			rotateccw();
-			moveforward();
-			_path.push_front(_pixel.GetCoordinates());
-			cout << _pixel.GetCoordinates().GetX() << ", " << _pixel.GetCoordinates().GetY() << endl;
-			_error = ErrorNum::NoError;
+			if ((ccwflag == false) && (cwflag == false))
+			{
+				rotateccw();
+				ccwflag = true;
+				moveforward();
+				_path.push_front(_pixel.GetCoordinates());
+				cout << _pixel.GetCoordinates().GetX() << ", " << _pixel.GetCoordinates().GetY() << endl;
+				_error = ErrorNum::NoError;
+			}
 		}
 		break;
 		case ErrorNum::NoTargetCell:
@@ -387,6 +405,8 @@ list<Coordinates> Maze::SolveMaze()
 		break;
 		case ErrorNum::NoError:
 		{
+			if ((cwflag) && (ccwflag))
+				break;
 			// do nothing
 		}
 		break;

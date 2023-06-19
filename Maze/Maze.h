@@ -9,7 +9,7 @@
 
 using namespace std;
 
-enum class ErrorNum { NoError=0, MazeGrid, NoStartCell, NumOfRowsIsZero, NumOfColsIsZero, NoLeftwall, NoTargetCell, DeadEnd, PathNotFound };
+enum class ErrorNum { NoError=0, MazeGrid, NoStartCell, NumOfRowsIsZero, NumOfColsIsZero, NoLeftwall, NoTargetCell, ReachedWall, CW_CCWTurnsDone, PathNotFound };
 
 // Class representing the Maze
 // The Maze will be responsible for solving the puzzle, by moving
